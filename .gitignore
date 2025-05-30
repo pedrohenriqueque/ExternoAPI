@@ -1,0 +1,28 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ambientes Virtuais
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Arquivos de IDE
+.idea/
+.vscode/
+
+# Testes
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Outros
+*.sqlite3
+*.log
+dist/
+build/
+*.egg-info/
