@@ -104,7 +104,7 @@ def test_validar_cartao_campo_obrigatorio_faltando_retorna_422_erro_pydantic():
     Testa uma requisição com um campo obrigatório faltando (número do cartão),
     esperando 422 com o erro de validação do Pydantic/FastAPI.
     """
-    response = client.post("//validaCartaoDeCredito", json=payload_cartao_campo_faltando)
+    response = client.post("/validaCartaoDeCredito", json=payload_cartao_campo_faltando)
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     response_data = response.json()

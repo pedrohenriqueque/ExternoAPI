@@ -9,9 +9,9 @@ from app.core.exceptions import CartaoApiError
 router = APIRouter()
 
 @router.post(
-    "/validaCartaoDeCredito",  # <--- CERTIFIQUE-SE QUE ESTÁ EXATAMENTE ASSIM
+    "/validaCartaoDeCredito",  #
     summary="Valida um cartão de crédito",
-    status_code=status.HTTP_204_NO_CONTENT, # Se você quer 204 para sucesso sem corpo
+    status_code=status.HTTP_204_NO_CONTENT,
     responses={
         status.HTTP_204_NO_CONTENT: {
             "description": "Validação do cartão bem-sucedida (sem conteúdo de resposta)"

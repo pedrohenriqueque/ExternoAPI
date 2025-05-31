@@ -1,18 +1,16 @@
-from pydantic_settings import BaseSettings
+# app/core/config.py - JEITO NOVO/CORRIGIDO
+from pydantic_settings import BaseSettings, SettingsConfigDict # Importe SettingsConfigDict
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Sistema de Controle de Bicicletário - Externo API"
+    PROJECT_NAME: str = "Microsserviço Externo - Validação e Notificação"
     API_V1_STR: str = "/api/v1"
 
-    # Você pode adicionar outras configurações globais aqui no futuro
-    # Exemplo: EMAIL_PROVIDER_URL: str = "default_url"
 
-    class Config:
-        case_sensitive = True
-        # Se você quiser usar um arquivo .env para carregar configurações,
-        # descomente a linha abaixo e crie um arquivo .env na raiz do projeto.
-        # Lembre-se de adicionar .env ao seu .gitignore!
-        # env_file = ".env"
-        # env_file_encoding = 'utf-8'
+    model_config = SettingsConfigDict(
+        case_sensitive=True,
+        env_file=".env",
+        env_file_encoding='utf-8',
+        extra='ignore'
+    )
 
 settings = Settings()
