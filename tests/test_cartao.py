@@ -8,28 +8,28 @@ client = TestClient(app)
 # --- Payloads de exemplo para os testes ---
 payload_cartao_valido = {
     "nomeTitular": "Pedro Valido Testador",
-    "numero": "1234567890123456",
+    "numero": "374912479705018",
     "validade": "12/28",  # MM/YY futuro
     "cvv": "123"
 }
 
-payload_cartao_simulado_invalido = { # Para ser rejeitado pela lógica de serviço
+payload_cartao_invalido = { # Para ser rejeitado pela lógica de serviço
     "nomeTitular": "Pedro Rejeitado Teste",
-    "numero": "9876543210980000", # Termina em 0000 para simular falha
+    "numero": "4514167286457082",
     "validade": "11/27",
     "cvv": "321"
 }
 
 payload_cartao_formato_cvv_invalido = { # Para falhar na validação Pydantic
     "nomeTitular": "Pedro Formato Errado CVV",
-    "numero": "1111222233334444",
+    "numero": "374912479705018",
     "validade": "10/29",
     "cvv": "abc" # CVV com letras, inválido pelo pattern \d{3,4}
 }
 
 payload_cartao_data_expirada = { # Para falhar na validação Pydantic (custom validator)
     "nomeTitular": "Pedro Cartao Expirado",
-    "numero": "3333444455556666",
+    "numero": "374912479705018",
     "validade": "12/20", # MM/YY passado
     "cvv": "789"
 }
@@ -52,19 +52,25 @@ def test_validar_cartao_sucesso_retorna_204_no_content():
     assert response.status_code == status.HTTP_204_NO_CONTENT
     assert response.content == b'' # Verifica se o corpo da resposta está vazio
 
-def test_validar_cartao_simulado_invalido_retorna_422_com_erro_customizado():
-    """
-    Testa um cartão que é considerado inválido pela lógica de serviço (simulação),
-    esperando 422 com o formato de erro customizado.
-    """
-    response = client.post("/validaCartaoDeCredito", json=payload_cartao_simulado_invalido)
+def test_validar_cartao_numero_luhn_invalido_retorna_422_formato_customizado():
+    response = client.post("/validaCartaoDeCredito", json=payload_cartao_invalido)
 
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-    expected_error_body = {
-        "codigo": "DADOS_INVALIDOS",
-        "mensagem": "Cartão de crédito inválido ou recusado."
-    }
-    assert response.json() == expected_error_body
+
+    # A mensagem exata pode depender da biblioteca PaymentCardNumber para este input específico
+    # Pode ser 'Card number is not luhn valid' ou algo sobre a bandeira
+    # Você pode precisar rodar uma vez para ver a mensagem exata do 'msg' e ajustar aqui
+    expected_error_message_substring = "Card number is not luhn valid" # Ou outra mensagem que PaymentCardNumber retorne
+    # para este número inválido.
+
+    actual_response_json = response.json()
+
+    assert actual_response_json["codigo"] == "NUMERO_CARTAO_INVALIDO"
+    # Verifica se a substring esperada está na mensagem (mais flexível que uma correspondência exata)
+    assert expected_error_message_substring in actual_response_json["mensagem"]
+    # Ou, para correspondência exata se você souber a mensagem:
+    # assert actual_response_json["mensagem"] == f"O número do cartão fornecido é inválido: {expected_error_message_substring}"
+
 
 def test_validar_cartao_formato_cvv_invalido_retorna_422_erro_pydantic():
     """

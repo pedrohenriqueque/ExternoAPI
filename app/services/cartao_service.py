@@ -11,14 +11,6 @@ class CartaoService:
         print(f"Validade: {dados_cartao.validade}")
         print(f"CVV: {dados_cartao.cvv}")
 
-        # Lógica de simulação simples:
-        # Por exemplo, recusar cartões terminados em "0000" para simular falha.
-        if dados_cartao.numero.endswith("0000"):
-            print("Simulação: Cartão REJEITADO (termina em 0000)")
-            return False # Simula cartão inválido
-
-        # Poderia adicionar outras lógicas, como verificar o CVV com base no número, etc.
-        print("Simulação: Cartão ACEITO")
-        return True # Simula cartão válido
+        return True #
 
 cartao_service_instance = CartaoService()
