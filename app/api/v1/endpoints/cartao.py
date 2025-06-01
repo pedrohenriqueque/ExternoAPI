@@ -24,6 +24,7 @@ router = APIRouter()
 async def validar_cartao_de_credito(
         cartao_data: NovoCartaoDeCreditoSchema = Body(...)
 ):
+    print("Entrou no validar_cartao_de_credito")
     valido = await cartao_service_instance.validar_cartao(cartao_data)
 
     if not valido:
