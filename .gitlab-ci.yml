@@ -27,12 +27,14 @@ unit-test-job:
     - pip install -r requirements.txt
     - pip install coverage pytest
     - coverage run -m pytest
-    - coverage xml  # Gera o coverage.xml que será usado pelo sonar
+    - pytest --junitxml=junit.xml
+    - coverage xml
   artifacts:
     reports:
       junit: junit.xml
     paths:
       - coverage.xml
+
 
 sonarcloud-check:
   stage: sonarcloud
