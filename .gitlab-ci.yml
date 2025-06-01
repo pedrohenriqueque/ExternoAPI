@@ -40,10 +40,14 @@ integration-test-job:
   image: python:3.10
   script:
     - pip install -r requirements.txt
+    - pip install coverage pytest
     - pytest tests/integration --junitxml=junit-integration.xml
+    - coverage xml
   artifacts:
     reports:
       junit: junit-integration.xml
+    paths:
+        - coverage.xml
   dependencies:
     - build-job
 
