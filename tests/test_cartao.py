@@ -87,3 +87,19 @@ def test_cvv_invalido(dados_base, cvv):
     with pytest.raises(CartaoApiError) as excinfo:
         NovoCartaoDeCreditoSchema(**dados_base)
     assert excinfo.value.codigo in ["CVV_VAZIO", "CVV_INVALIDO", "CVV_TAMANHO_INVALIDO"]
+
+# --- Números de cartão inválidos ---
+@pytest.mark.parametrize("numero_invalido", [
+    "",                       # vazio
+    "4111 1111 1111 111",     # incompleto
+    "abcd1234abcd5678",       # letras
+    "4111111111111121",       # falha no algoritmo de Luhn
+    "0000000000000000",       # não passa no Luhn
+    "1234567890123456"        # estrutura válida, mas inválido no Luhn
+])
+def test_numero_cartao_invalido(dados_base, numero_invalido):
+    dados_base["validade"] = validade_futura()
+    dados_base["numero"] = numero_invalido
+    with pytest.raises(CartaoApiError) as excinfo:
+        NovoCartaoDeCreditoSchema(**dados_base)
+    assert excinfo.value.codigo == "NUMERO_INVALIDO"

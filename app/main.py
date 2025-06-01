@@ -21,32 +21,6 @@ async def cartao_api_exception_handler(request: Request, exc: CartaoApiError):
         content=ErroSchema(codigo=exc.codigo, mensagem=exc.mensagem).model_dump()
     )
 
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-    for error in exc.errors():
-        loc = error.get("loc", ()) # Ex: ('body', 'numero')
-        error_type = error.get("type", "") # Ex: 'payment_card_number_luhn'
-
-        # Condição específica para erro de validação do número do cartão
-        if (len(loc) > 1 and
-                loc[0] == "body" and
-                loc[1] == "numero" and
-                ("payment_card_number" in error_type or "luhn" in error_type)): # Checa por tipos comuns de erro de cartão
-
-            # Se for, retorna o ErroSchema customizado
-            return JSONResponse(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                content=jsonable_encoder(ErroSchema(
-                    codigo="422", # Código específico para este erro
-                    mensagem="Numero de Cartão Invalido"
-                ))
-            )
-
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": jsonable_encoder(exc.errors())} # Formato padrão do FastAPI
-    )
-# Inclui os routers
 
 app.include_router(
     cartao_v1_router.router,
