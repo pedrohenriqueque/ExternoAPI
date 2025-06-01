@@ -1,5 +1,6 @@
 stages:
   - build
+  - test
   - sonarcloud
   - deploy
 
@@ -19,27 +20,41 @@ build-job:
     - echo "Compiling the code..."
     - echo "Compile complete."
 
-# Aqui só vamos garantir que o coverage.xml gerado localmente está disponível para o job sonarcloud
-# Você precisa garantir que o coverage.xml gerado localmente seja enviado para o pipeline,
-# por exemplo, via upload manual, commit, ou artifact compartilhado.
+test-job:
+  stage: test
+  image: python:3.10
+  script:
+    - pip install -r requirements.txt
+    - pip install pytest pytest-cov
+    - pytest --cov=app --cov-report=xml
+    # Ajusta paths no coverage.xml para o ambiente Linux do runner (relativo)
+    - sed -i 's|C:/Users/Pedro/PycharmProjects/ExternoAPI/|app/|g' coverage.xml
+  artifacts:
+    paths:
+      - coverage.xml
+      - .pytest_cache/
+      - app/
 
 sonarcloud-check:
   stage: sonarcloud
   image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
+  dependencies:
+    - test-job
   script:
-    - sonar-scanner -Dsonar.projectKey=pedrohenriqueque-group_ExternoAPI -Dsonar.organization=pedrohenriqueque-group -Dsonar.sources=app -Dsonar.python.version=3.10 -Dsonar.coverageReportPaths=coverage.xml -Dsonar.sourceEncoding=UTF-8 -Dsonar.login=$SONAR_TOKEN
+    - sonar-scanner \
+      -Dsonar.projectKey=pedrohenriqueque-group_ExternoAPI \
+      -Dsonar.organization=pedrohenriqueque-group \
+      -Dsonar.sources=app \
+      -Dsonar.python.version=3.10 \
+      -Dsonar.python.coverage.reportPaths=coverage.xml \
+      -Dsonar.sourceEncoding=UTF-8 \
+      -Dsonar.login=$SONAR_TOKEN
   only:
     - merge_requests
     - master
     - develop
-  dependencies:
-    - build-job
-  artifacts:
-    paths:
-      - coverage.xml
-
 
 deploy-job:
   stage: deploy
