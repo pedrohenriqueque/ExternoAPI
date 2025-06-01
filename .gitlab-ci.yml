@@ -26,8 +26,8 @@ unit-test-job:
   script:
     - pip install -r requirements.txt
     - pip install coverage pytest
-    - coverage run -m pytest
-    - pytest --junitxml=junit.xml
+    - coverage run -m pytest tests/unit
+    - pytest tests/unit --junitxml=junit.xml
     - coverage xml
   artifacts:
     reports:
@@ -35,6 +35,17 @@ unit-test-job:
     paths:
       - coverage.xml
 
+integration-test-job:
+  stage: test
+  image: python:3.10
+  script:
+    - pip install -r requirements.txt
+    - pytest tests/integration --junitxml=junit-integration.xml
+  artifacts:
+    reports:
+      junit: junit-integration.xml
+  dependencies:
+    - build-job
 
 sonarcloud-check:
   stage: sonarcloud
