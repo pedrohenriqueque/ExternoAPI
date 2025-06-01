@@ -40,12 +40,16 @@ integration-test-job:
   image: python:3.10
   script:
     - pip install -r requirements.txt
-    - pytest tests/integration --junitxml=junit-integration.xml
+    - coverage run --append -m pytest tests/integration --junitxml=junit-integration.xml
+    - coverage xml  # atualiza o coverage.xml com os dois tipos de testes
   artifacts:
     reports:
       junit: junit-integration.xml
+    paths:
+      - coverage.xml  # <--- garante que o job sonar vai receber isso
   dependencies:
     - build-job
+    - unit-test-job  # se quiser garantir sequência
 
 sonarcloud-check:
   stage: sonarcloud
