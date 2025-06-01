@@ -1,2 +1,11 @@
 [run]
 source = app
+
+[report]
+omit =
+    */tests/*
+    */__init__.py
+
+[paths]
+source =
+    app
