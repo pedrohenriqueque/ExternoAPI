@@ -1,7 +1,7 @@
 from app.api.v1.schemas.cartao_schema import NovoCartaoDeCreditoSchema
 
 class CartaoService:
-    async def validar_cartao_simulado(self, dados_cartao: NovoCartaoDeCreditoSchema) -> bool:
+    async def validar_cartao(self, dados_cartao: NovoCartaoDeCreditoSchema) -> bool:
         """
         Simula a validação de um cartão de crédito.
         Em um cenário real, aqui você chamaria um SDK de gateway de pagamento.
