@@ -26,51 +26,54 @@ unit-test-job:
   script:
     - pip install -r requirements.txt
     - pip install coverage pytest
+    # roda testes unitários e gera o arquivo .coverage e coverage.xml
     - coverage run -m pytest tests/unit
-    - pytest tests/unit --junitxml=junit.xml
     - coverage xml
   artifacts:
     reports:
       junit: junit.xml
     paths:
+      - .coverage        # salva o arquivo .coverage para ser usado no próximo job
       - coverage.xml
 
 integration-test-job:
   stage: test
   image: python:3.10
+  dependencies:
+    - unit-test-job      # baixa o .coverage gerado no unit-test-job
   script:
     - pip install -r requirements.txt
     - pip install coverage pytest
-    - pytest tests/integration --junitxml=junit-integration.xml
-    - coverage xml
+    # roda testes de integração acrescentando na cobertura existente
+    - coverage run --append -m pytest tests/integration
+    - coverage xml       # atualiza o coverage.xml com tudo
   artifacts:
     reports:
       junit: junit-integration.xml
     paths:
-        - coverage.xml
-  dependencies:
-    - build-job
+      - .coverage
+      - coverage.xml
 
 sonarcloud-check:
   stage: sonarcloud
   image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
+  dependencies:
+    - integration-test-job  # baixa o coverage.xml combinado do job de integração
   script:
-    - sonar-scanner
-      -Dsonar.projectKey=pedrohenriqueque-group_ExternoAPI
-      -Dsonar.organization=pedrohenriqueque-group
-      -Dsonar.sources=app
-      -Dsonar.python.version=3.10
-      -Dsonar.python.coverage.reportPaths=coverage.xml
-      -Dsonar.sourceEncoding=UTF-8
+    - sonar-scanner \
+      -Dsonar.projectKey=pedrohenriqueque-group_ExternoAPI \
+      -Dsonar.organization=pedrohenriqueque-group \
+      -Dsonar.sources=app \
+      -Dsonar.python.version=3.10 \
+      -Dsonar.python.coverage.reportPaths=coverage.xml \
+      -Dsonar.sourceEncoding=UTF-8 \
       -Dsonar.login=$SONAR_TOKEN
   only:
     - merge_requests
     - master
     - develop
-  dependencies:
-    - unit-test-job
 
 deploy-job:
   stage: deploy
