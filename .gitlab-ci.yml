@@ -6,8 +6,9 @@ stages:
 
 variables:
   SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
-  GIT_DEPTH: "0"  # Necessário para Sonar identificar histórico
+  GIT_DEPTH: "0"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  COVERAGE_FILE: ".coverage"  # força o mesmo arquivo coverage em todos os jobs
 
 cache:
   paths:
@@ -26,32 +27,38 @@ unit-test-job:
   script:
     - pip install -r requirements.txt
     - pip install coverage pytest
+    - ls -la  # para depurar
     - coverage run -m pytest tests/unit
     - pytest tests/unit --junitxml=junit.xml
+    - coverage xml
+    - ls -la coverage.xml  # depuração
   artifacts:
     reports:
       junit: junit.xml
     paths:
-      - .coverage  # <-- importante salvar isso!
+      - .coverage
+      - coverage.xml
     expire_in: 1 hour
 
 integration-test-job:
   stage: test
   image: python:3.10
   dependencies:
-    - unit-test-job  # traz o .coverage
+    - unit-test-job  # garante que recebe .coverage do job anterior
   script:
     - pip install -r requirements.txt
     - pip install coverage pytest
+    - ls -la  # verifica se .coverage veio do job anterior
     - coverage run --append -m pytest tests/integration --junitxml=junit-integration.xml
-    - coverage combine  # junta unit + integração
-    - coverage xml       # gera coverage.xml final
+    - coverage combine  # combina os dados dos testes unitários + integração
+    - coverage xml
+    - ls -la coverage.xml  # depuração
   artifacts:
     reports:
       junit: junit-integration.xml
     paths:
       - .coverage
-      - coverage.xml  # <- SonarCloud precisa disso
+      - coverage.xml
     expire_in: 1 hour
 
 sonarcloud-check:
@@ -59,8 +66,6 @@ sonarcloud-check:
   image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
-  dependencies:
-    - integration-test-job  # precisa do coverage.xml final
   script:
     - sonar-scanner
       -Dsonar.projectKey=pedrohenriqueque-group_ExternoAPI
@@ -74,6 +79,8 @@ sonarcloud-check:
     - merge_requests
     - master
     - develop
+  dependencies:
+    - integration-test-job  # usa cobertura combinada
 
 deploy-job:
   stage: deploy
