@@ -56,7 +56,7 @@ sonarcloud-check:
     - merge_requests
     - master
     - develop
-    -
+
 deploy-job:
   stage: deploy
   environment: production
