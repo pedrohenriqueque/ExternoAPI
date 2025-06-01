@@ -1,13 +1,12 @@
 stages:
   - build
   - test
-  - coverage-merge
   - sonarcloud
   - deploy
 
 variables:
   SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
-  GIT_DEPTH: "0"
+  GIT_DEPTH: "0"  # Para o Sonar funcionar corretamente com histórico
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 cache:
@@ -29,43 +28,28 @@ unit-test-job:
     - pip install coverage pytest
     - coverage run -m pytest tests/unit
     - pytest tests/unit --junitxml=junit.xml
-    - mv .coverage .coverage.unit  # Renomeia para não sobrescrever
+    - coverage xml
   artifacts:
     reports:
       junit: junit.xml
     paths:
-      - .coverage.unit
+      - coverage.xml
 
 integration-test-job:
   stage: test
   image: python:3.10
   script:
     - pip install -r requirements.txt
-    - pip install coverage pytest
-    - coverage run -m pytest tests/integration
-    - pytest tests/integration --junitxml=junit-integration.xml
-    - mv .coverage .coverage.integration
+    - coverage run --append -m pytest tests/integration --junitxml=junit-integration.xml
+    - coverage xml  # atualiza o coverage.xml com os dois tipos de testes
   artifacts:
     reports:
       junit: junit-integration.xml
     paths:
-      - .coverage.integration
+      - coverage.xml  # <--- garante que o job sonar vai receber isso
   dependencies:
     - build-job
-
-coverage-merge-job:
-  stage: coverage-merge
-  image: python:3.10
-  dependencies:
-    - unit-test-job
-    - integration-test-job
-  script:
-    - pip install coverage
-    - coverage combine .coverage.unit .coverage.integration
-    - coverage xml
-  artifacts:
-    paths:
-      - coverage.xml
+    - unit-test-job  # se quiser garantir sequência
 
 sonarcloud-check:
   stage: sonarcloud
@@ -73,20 +57,20 @@ sonarcloud-check:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
   script:
-    - sonar-scanner \
-      -Dsonar.projectKey=pedrohenriqueque-group_ExternoAPI \
-      -Dsonar.organization=pedrohenriqueque-group \
-      -Dsonar.sources=app \
-      -Dsonar.python.version=3.10 \
-      -Dsonar.python.coverage.reportPaths=coverage.xml \
-      -Dsonar.sourceEncoding=UTF-8 \
+    - sonar-scanner
+      -Dsonar.projectKey=pedrohenriqueque-group_ExternoAPI
+      -Dsonar.organization=pedrohenriqueque-group
+      -Dsonar.sources=app
+      -Dsonar.python.version=3.10
+      -Dsonar.python.coverage.reportPaths=coverage.xml
+      -Dsonar.sourceEncoding=UTF-8
       -Dsonar.login=$SONAR_TOKEN
   only:
     - merge_requests
     - master
     - develop
   dependencies:
-    - coverage-merge-job
+    - unit-test-job
 
 deploy-job:
   stage: deploy
