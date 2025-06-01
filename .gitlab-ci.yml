@@ -35,7 +35,7 @@ test-job:
       - .pytest_cache/
       - app/
 
-sonarcloud-check:
+onarcloud-check:
   stage: sonarcloud
   image:
     name: sonarsource/sonar-scanner-cli:latest
@@ -43,19 +43,20 @@ sonarcloud-check:
   dependencies:
     - test-job
   script:
-    - sonar-scanner \
-      -Dsonar.projectKey=pedrohenriqueque-group_ExternoAPI \
-      -Dsonar.organization=pedrohenriqueque-group \
-      -Dsonar.sources=app \
-      -Dsonar.python.version=3.10 \
-      -Dsonar.python.coverage.reportPaths=coverage.xml \
-      -Dsonar.sourceEncoding=UTF-8 \
-      -Dsonar.login=$SONAR_TOKEN
+    - |
+      sonar-scanner \
+        -Dsonar.projectKey=pedrohenriqueque-group_ExternoAPI \
+        -Dsonar.organization=pedrohenriqueque-group \
+        -Dsonar.sources=app \
+        -Dsonar.python.version=3.10 \
+        -Dsonar.python.coverage.reportPaths=coverage.xml \
+        -Dsonar.sourceEncoding=UTF-8 \
+        -Dsonar.login=$SONAR_TOKEN
   only:
     - merge_requests
     - master
     - develop
-
+    -
 deploy-job:
   stage: deploy
   environment: production
