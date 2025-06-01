@@ -6,7 +6,7 @@ stages:
 
 variables:
   SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
-  GIT_DEPTH: "0"  # Para o Sonar funcionar corretamente com histórico
+  GIT_DEPTH: "0"  # Necessário para Sonar identificar histórico
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 cache:
@@ -28,34 +28,39 @@ unit-test-job:
     - pip install coverage pytest
     - coverage run -m pytest tests/unit
     - pytest tests/unit --junitxml=junit.xml
-    - coverage xml
   artifacts:
     reports:
       junit: junit.xml
     paths:
-      - coverage.xml
+      - .coverage  # <-- importante salvar isso!
+    expire_in: 1 hour
 
 integration-test-job:
   stage: test
   image: python:3.10
+  dependencies:
+    - unit-test-job  # traz o .coverage
   script:
     - pip install -r requirements.txt
+    - pip install coverage pytest
     - coverage run --append -m pytest tests/integration --junitxml=junit-integration.xml
-    - coverage xml  # atualiza o coverage.xml com os dois tipos de testes
+    - coverage combine  # junta unit + integração
+    - coverage xml       # gera coverage.xml final
   artifacts:
     reports:
       junit: junit-integration.xml
     paths:
-      - coverage.xml  # <--- garante que o job sonar vai receber isso
-  dependencies:
-    - build-job
-    - unit-test-job  # se quiser garantir sequência
+      - .coverage
+      - coverage.xml  # <- SonarCloud precisa disso
+    expire_in: 1 hour
 
 sonarcloud-check:
   stage: sonarcloud
   image:
     name: sonarsource/sonar-scanner-cli:latest
     entrypoint: [""]
+  dependencies:
+    - integration-test-job  # precisa do coverage.xml final
   script:
     - sonar-scanner
       -Dsonar.projectKey=pedrohenriqueque-group_ExternoAPI
@@ -69,8 +74,6 @@ sonarcloud-check:
     - merge_requests
     - master
     - develop
-  dependencies:
-    - unit-test-job
 
 deploy-job:
   stage: deploy
