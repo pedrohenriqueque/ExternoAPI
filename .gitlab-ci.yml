@@ -57,6 +57,16 @@ sonarcloud-check:
     - master
     - develop
 
+
+render-deploy:
+  stage: deploy
+  image: curlimages/curl:latest
+  script:
+    - curl -X POST "https://api.render.com/deploy/srv-d10bv549c44c73dihid0?key=4TAdh2zqfgk"
+  only:
+    - master
+
+
 deploy-job:
   stage: deploy
   image: python:3.11-alpine
