@@ -58,11 +58,13 @@ sonarcloud-check:
     - develop
 
 run-uvicorn:
+  stage: test
   image: python:3.11-alpine
   script:
-    - apk add --no-cache gcc musl-dev # se precisar compilar alguma dependência
-    - pip install --no-cache-dir uvicorn fastapi
+    - apk add --no-cache gcc musl-dev
+    - pip install --no-cache-dir -r requirements.txt
     - uvicorn app.main:app --host 0.0.0.0 --port 8000
+
 
 
 deploy-job:
