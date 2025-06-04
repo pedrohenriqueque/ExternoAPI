@@ -59,19 +59,20 @@ sonarcloud-check:
 
 deploy-job:
   stage: deploy
-  image: amazon/aws-cli
+  image: amazon/aws-cli:2.12.9  # Use a versão 2.x para ter deploy
   script:
     - echo "Zippando aplicação..."
-    - zip -r app.zip .
+    - apt-get update && apt-get install -y zip  # instalar zip se não existir
+    - zip -r app.zip . -x '*.git*' '__pycache__/*' '*.DS_Store'
     - echo "Enviando para S3..."
     - aws s3 cp app.zip s3://$S3_BUCKET_NAME/app.zip
     - echo "Iniciando deploy no CodeDeploy..."
-    - |
-      aws deploy create-deployment \
-        --application-name $CODEDEPLOY_APPLICATION_NAME \
-        --deployment-group-name $CODEDEPLOY_DEPLOYMENT_GROUP_NAME \
-        --s3-location bucket=$S3_BUCKET_NAME,key=app.zip,bundleType=zip \
-        --region $AWS_DEFAULT_REGION
+    - aws deploy create-deployment \
+      --application-name $CODEDEPLOY_APPLICATION_NAME \
+      --deployment-group-name $CODEDEPLOY_DEPLOYMENT_GROUP_NAME \
+      --s3-location bucket=$S3_BUCKET_NAME,key=app.zip,bundleType=zip \
+      --region $AWS_DEFAULT_REGION
     - echo "Deploy solicitado com sucesso."
   only:
     - master
+
