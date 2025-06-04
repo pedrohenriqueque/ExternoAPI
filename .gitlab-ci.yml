@@ -57,11 +57,12 @@ sonarcloud-check:
     - master
     - develop
 
-test-zip:
-  image: amazon/aws-cli:latest
+run-uvicorn:
+  image: python:3.11-alpine
   script:
-    - apt-get update && apt-get install -y zip
-    - zip --version
+    - apk add --no-cache gcc musl-dev # se precisar compilar alguma dependência
+    - pip install --no-cache-dir uvicorn fastapi
+    - uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 
 deploy-job:
