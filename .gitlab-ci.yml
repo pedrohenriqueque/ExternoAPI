@@ -60,8 +60,9 @@ sonarcloud-check:
 test-zip:
   image: amazon/aws-cli:latest
   script:
-    - apk add --no-cache zip
+    - apt-get update && apt-get install -y zip
     - zip --version
+
 
 deploy-job:
   stage: deploy
