@@ -59,10 +59,10 @@ sonarcloud-check:
 
 deploy-job:
   stage: deploy
-  image: amazon/aws-cli:2.12.9  # Use a versão 2.x para ter deploy
+  image: amazon/aws-cli:latest
   script:
-    - echo "Zippando aplicação..."
-    - apt-get update && apt-get install -y zip  # instalar zip se não existir
+    - echo "Instalando zip..."
+    - apk add --no-cache zip  # usa apk pois a imagem é baseada em Alpine
     - zip -r app.zip . -x '*.git*' '__pycache__/*' '*.DS_Store'
     - echo "Enviando para S3..."
     - aws s3 cp app.zip s3://$S3_BUCKET_NAME/app.zip
@@ -75,4 +75,5 @@ deploy-job:
     - echo "Deploy solicitado com sucesso."
   only:
     - master
+
 
