@@ -59,7 +59,19 @@ sonarcloud-check:
 
 deploy-job:
   stage: deploy
-  environment: production
+  image: amazon/aws-cli
   script:
-    - echo "Deploying application..."
-    - echo "Application successfully deployed."
+    - echo "Zippando aplicação..."
+    - zip -r app.zip .
+    - echo "Enviando para S3..."
+    - aws s3 cp app.zip s3://$S3_BUCKET_NAME/app.zip
+    - echo "Iniciando deploy no CodeDeploy..."
+    - |
+      aws deploy create-deployment \
+        --application-name $CODEDEPLOY_APPLICATION_NAME \
+        --deployment-group-name $CODEDEPLOY_DEPLOYMENT_GROUP_NAME \
+        --s3-location bucket=$S3_BUCKET_NAME,key=app.zip,bundleType=zip \
+        --region $AWS_DEFAULT_REGION
+    - echo "Deploy solicitado com sucesso."
+  only:
+    - master
