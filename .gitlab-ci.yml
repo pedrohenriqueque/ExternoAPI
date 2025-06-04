@@ -59,23 +59,16 @@ sonarcloud-check:
 
 deploy-job:
   stage: deploy
-  image: amazon/aws-cli:latest
+  image: python:3.11-alpine
   script:
-    - apk add --no-cache zip
-    - echo "Conteúdo do diretório:"
-    - ls -la
-    - echo "Variáveis de ambiente:"
-    - echo "S3_BUCKET_NAME=$S3_BUCKET_NAME"
-    - echo "CODEDEPLOY_APPLICATION_NAME=$CODEDEPLOY_APPLICATION_NAME"
-    - echo "CODEDEPLOY_DEPLOYMENT_GROUP_NAME=$CODEDEPLOY_DEPLOYMENT_GROUP_NAME"
-    - echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION"
+    - apk add --no-cache zip curl
+    - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    - unzip awscliv2.zip
+    - ./aws/install
+    - aws --version
     - zip -r app.zip . -x '*.git*' '__pycache__/*' '*.DS_Store'
     - aws s3 cp app.zip s3://$S3_BUCKET_NAME/app.zip
-    - aws deploy create-deployment \
-      --application-name $CODEDEPLOY_APPLICATION_NAME \
-      --deployment-group-name $CODEDEPLOY_DEPLOYMENT_GROUP_NAME \
-      --s3-location bucket=$S3_BUCKET_NAME,key=app.zip,bundleType=zip \
-      --region $AWS_DEFAULT_REGION
+    - aws deploy create-deployment --application-name $CODEDEPLOY_APPLICATION_NAME --deployment-group-name $CODEDEPLOY_DEPLOYMENT_GROUP_NAME --s3-location bucket=$S3_BUCKET_NAME,key=app.zip,bundleType=zip --region $AWS_DEFAULT_REGION
 
 
 
