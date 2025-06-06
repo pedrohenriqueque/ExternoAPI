@@ -1,8 +1,9 @@
 import stripe
 from app.api.v1.schemas.cartao_schema import NovoCartaoDeCreditoSchema
 from app.core.exceptions import CartaoApiError
+import os
+stripe.api_key = os.getenv("STRIPE_API_KEY")
 
-stripe.api_key = "sk_test_51RWQ3aCsgOR6s2Dtnnkx5Ifs52oDuskSc7KpODbfkaUDMuSeYXS8ig0wMfoIsz96snJY3mcWi2xiE1N1a6CTsI6C00ZUnmXM3b"
 
 class CartaoService:
     async def validar_cartao(self, dados: NovoCartaoDeCreditoSchema) -> None:

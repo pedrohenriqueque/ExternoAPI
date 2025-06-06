@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.api.v1.schemas.nova_cobranca_schema import NovaCobrancaSchema
+from app.core.exceptions import CartaoApiError
 from app.services.cobranca_service import CobrancaService
 from app.db.dependencies import get_db
 from app.api.v1.schemas.cobranca_schema import CobrancaSchema
@@ -18,9 +19,8 @@ def criar_cobranca(
         nova_cobranca = service.criar_cobranca(cobranca)
         nova_cobranca = service.processar_cobranca(nova_cobranca)
         return nova_cobranca
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
+    except Exception:
+        raise CartaoApiError(422, "ERRO_CRIAR_COBRANCA", "Cobrança não foi criada.")
 
 @router.get("/{id_cobranca}", response_model=CobrancaSchema, status_code=status.HTTP_200_OK)
 def obter_cobranca(
@@ -31,7 +31,7 @@ def obter_cobranca(
         service = CobrancaService(db)
         cobranca = service.obter_por_id(id_cobranca)
         if not cobranca:
-            raise HTTPException(status_code=404, detail="Cobrança não encontrada.")
+            raise CartaoApiError(404, "COBRANCA_NAO_ENCONTRADA", "Cobrança não encontrada.")
         return cobranca
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except Exception:
+        raise CartaoApiError(422, "ERRO_OBTER_COBRANCA", "Erro ao buscar cobrança.")

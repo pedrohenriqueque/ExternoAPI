@@ -6,8 +6,9 @@ from app.api.v1.schemas.nova_cobranca_schema import NovaCobrancaSchema
 from app.models.cobranca import Cobranca
 from app.core.exceptions import CartaoApiError
 from typing import Optional
+import os
 
-stripe.api_key = "sk_test_51RWQ3aCsgOR6s2Dtnnkx5Ifs52oDuskSc7KpODbfkaUDMuSeYXS8ig0wMfoIsz96snJY3mcWi2xiE1N1a6CTsI6C00ZUnmXM3b"
+stripe.api_key = os.getenv("STRIPE_API_KEY")
 
 class CobrancaService:
     def __init__(self, db: Session):
