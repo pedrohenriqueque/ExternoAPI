@@ -2,11 +2,13 @@ from datetime import datetime, timezone
 import stripe
 from sqlalchemy.orm import Session
 
-from app.api.v1.schemas.nova_cobranca_schema import NovaCobrancaSchema
+
 from app.models.cobranca import Cobranca
 from app.core.exceptions import CartaoApiError
 from typing import Optional
 import os
+
+from app.schemas.nova_cobranca_schema import NovaCobrancaSchema
 
 stripe.api_key = os.getenv("STRIPE_API_KEY")
 

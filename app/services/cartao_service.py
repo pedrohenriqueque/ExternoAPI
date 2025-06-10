@@ -1,8 +1,11 @@
 import stripe
-from app.api.v1.schemas.cartao_schema import NovoCartaoDeCreditoSchema
+from app.schemas.cartao_schema import NovoCartaoDeCreditoSchema
 from app.core.exceptions import CartaoApiError
 import os
+from dotenv import load_dotenv
+load_dotenv()
 stripe.api_key = os.getenv("STRIPE_API_KEY")
+
 
 
 class CartaoService:
@@ -20,9 +23,12 @@ class CartaoService:
                 capture_method="automatic"
             )
 
-            print(f"Stripe status: {intent.status}")
             if intent.status != "succeeded":
                 raise CartaoApiError(422, "CARTAO_RECUSADO", "O cartão foi recusado.")
+
+
+            stripe.Refund.create(payment_intent=intent.id)
+
 
         except stripe.error.CardError as e:
             raise CartaoApiError(422, "CARTAO_RECUSADO", e.user_message)

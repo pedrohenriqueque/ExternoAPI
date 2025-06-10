@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 
-from app.api.v1.schemas.cartao_schema import NovoCartaoDeCreditoSchema
+from app.schemas.cartao_schema import NovoCartaoDeCreditoSchema
 from app.core.exceptions import CartaoApiError
 
 

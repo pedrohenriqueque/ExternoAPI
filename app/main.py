@@ -4,12 +4,12 @@ from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.core.exceptions import CartaoApiError
-from app.api.v1.schemas.error_schema import ErroSchema
 from app.db.base_class import Base
 from app.db.session import engine
 
-from app.api.v1.controller import cartao as cartao_v1_router
-from app.api.v1.controller import cobranca as cobranca_v1_router
+from app.controller import cobranca as cobranca_v1_router
+from app.controller import email as email_v1_router, cartao as cartao_v1_router
+from app.schemas.error_schema import ErroSchema
 
 Base.metadata.create_all(bind=engine)
 
@@ -36,6 +36,13 @@ app.include_router(
     cobranca_v1_router.router,
     prefix="",
     tags=["Cobrança"]
+
+)
+
+app.include_router(
+    email_v1_router.router,
+    prefix="",
+    tags=["Email"]
 
 )
 

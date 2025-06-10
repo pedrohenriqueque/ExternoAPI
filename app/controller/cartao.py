@@ -1,9 +1,8 @@
 # app/api/v1/controller/cartao.py
 from fastapi import APIRouter, status, Body, Response
-from app.api.v1.schemas.cartao_schema import NovoCartaoDeCreditoSchema # ou o nome que você deu ao arquivo/classe
-from app.api.v1.schemas.error_schema import ErroSchema # ou o nome que você deu ao arquivo/classe
+from app.schemas.cartao_schema import NovoCartaoDeCreditoSchema # ou o nome que você deu ao arquivo/classe
+from app.schemas.error_schema import ErroSchema # ou o nome que você deu ao arquivo/classe
 from app.services.cartao_service import cartao_service_instance # ou o nome que você deu ao arquivo/instância
-from app.core.exceptions import CartaoApiError
 
 router = APIRouter()
 
