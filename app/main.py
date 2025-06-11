@@ -9,6 +9,8 @@ from app.db.session import engine
 
 from app.controller import cobranca as cobranca_v1_router
 from app.controller import email as email_v1_router, cartao as cartao_v1_router
+from app.controller import fila_cobranca as fila_cobranca_v1_router
+from app.controller import processa_fila_cobranca as processa_fila_cobranca_v1_router
 from app.schemas.error_schema import ErroSchema
 
 Base.metadata.create_all(bind=engine)
@@ -41,6 +43,20 @@ app.include_router(
 
 app.include_router(
     email_v1_router.router,
+    prefix="",
+    tags=["Email"]
+
+)
+
+app.include_router(
+    processa_fila_cobranca_v1_router.router,
+    prefix="",
+    tags=["Email"]
+
+)
+
+app.include_router(
+    fila_cobranca_v1_router.router,
     prefix="",
     tags=["Email"]
 

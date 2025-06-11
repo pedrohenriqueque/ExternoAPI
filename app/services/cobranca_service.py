@@ -32,7 +32,7 @@ class CobrancaService:
             intent = stripe.PaymentIntent.create(
                 amount=int(cobranca.valor * 100),
                 currency="brl",
-                payment_method="pm_card_visa",
+                payment_method="pm_card_visa_chargeDeclined",
                 confirm=True,
                 off_session=True,
                 capture_method="automatic"
@@ -59,3 +59,28 @@ class CobrancaService:
 
     def obter_por_id(self, id_cobranca: int) -> Optional[Cobranca]:
         return self.db.query(Cobranca).filter(Cobranca.id == id_cobranca).first()
+
+    def incluir_na_fila(self, dados: NovaCobrancaSchema) -> Cobranca:
+            nova_cobranca = Cobranca(
+                ciclista=dados.ciclista,
+                valor=dados.valor,
+                status="PENDENTE",
+                horaSolicitacao=datetime.now()
+            )
+            self.db.add(nova_cobranca)
+            self.db.commit()
+            self.db.refresh(nova_cobranca)
+            return nova_cobranca
+
+    def processar_cobrancas_em_fila(self):
+        cobrancas_pendentes = self.db.query(Cobranca).filter_by(status="PENDENTE").all()
+        cobrancas_processadas = []
+
+        for cobranca in cobrancas_pendentes:
+            try:
+                cobranca_processada = self.processar_cobranca(cobranca)
+                cobrancas_processadas.append(cobranca_processada)
+            except Exception:
+                continue
+
+        return cobrancas_processadas
