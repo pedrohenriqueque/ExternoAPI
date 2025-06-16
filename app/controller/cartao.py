@@ -1,28 +1,24 @@
-# app/api/v1/controller/cartao.py
-from fastapi import APIRouter, status, Body, Response
-from app.schemas.cartao_schema import NovoCartaoDeCreditoSchema # ou o nome que você deu ao arquivo/classe
-from app.schemas.error_schema import ErroSchema # ou o nome que você deu ao arquivo/classe
-from app.services.cartao_service import cartao_service_instance # ou o nome que você deu ao arquivo/instância
+from fastapi import APIRouter, status, Depends
+from app.schemas.cartao_schema import NovoCartaoDeCreditoSchema
+from app.schemas.error_schema import ErroSchema
+from app.services.cartao_service import get_cartao_service, CartaoService
 
-router = APIRouter()
+router = APIRouter(tags=["Externo"])
 
 @router.post(
-    "/validaCartaoDeCredito",  #
-    summary="Valida um cartão de crédito",
-    status_code=status.HTTP_204_NO_CONTENT,
+    "/validaCartaoDeCredito",
+    status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_204_NO_CONTENT: {
-            "description": "Validação do cartão bem-sucedida (sem conteúdo de resposta)"
-        },
+        status.HTTP_200_OK: {"description": "Validação do cartão bem-sucedida"},
         status.HTTP_422_UNPROCESSABLE_ENTITY: {
             "description": "Dados Inválidos ou Cartão Recusado",
             "model": ErroSchema
         }
     }
 )
-
-async def validar_cartao_de_credito(
-        cartao_data: NovoCartaoDeCreditoSchema = Body(...)
+async def validar_cartao(
+        dados: NovoCartaoDeCreditoSchema,
+        service: CartaoService = Depends(get_cartao_service)
 ):
-    await cartao_service_instance.validar_cartao(cartao_data)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    await service.validar_cartao(dados)
+    return {"mensagem": "Cartão validado com sucesso"}

@@ -2,6 +2,9 @@ import os
 import sendgrid
 from sendgrid.helpers.mail import Mail
 
+from app.core.exceptions import CartaoApiError
+
+
 class EmailClient:
     def __init__(self):
         self.api_key = os.getenv("SENDGRID_API_KEY")
@@ -18,4 +21,4 @@ class EmailClient:
         response = self.sg.send(email)
 
         if not (200 <= response.status_code < 300):
-            raise Exception(f"Erro ao enviar e-mail: {response.status_code} - {response.body}")
+            raise CartaoApiError(422,"","")

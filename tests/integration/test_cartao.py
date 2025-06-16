@@ -13,11 +13,11 @@ def validade_futura():
 def test_validacao_cartao_valido():
     response = client.post("/validaCartaoDeCredito", json={
         "nomeTitular": "João da Silva",
-        "numero": "4111111111111111",
+        "numero": "4242424242424242",
         "validade": validade_futura(),
         "cvv": "123"
     })
-    assert response.status_code == 204
+    assert response.status_code == 200
 
 
 # --- Testes de erro ---
