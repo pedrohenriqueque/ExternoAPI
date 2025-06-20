@@ -7,7 +7,7 @@ from app.db.seed import restaurar_dados_iniciais
 router = APIRouter()
 
 @router.post(
-    "/restaurar-banco",
+    "/restaurarBanco",
     tags=["Externo"],
     status_code=status.HTTP_200_OK,
     summary="Restaura o banco de dados para os dados iniciais."

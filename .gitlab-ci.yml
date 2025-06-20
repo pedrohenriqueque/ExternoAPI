@@ -90,5 +90,5 @@ processar_fila_job:
     - if: $CI_PIPELINE_SOURCE == "schedule"
   script:
     - echo "Iniciando job agendado para processar fila..."
-    - curl -X POST -f https://externoapi.onrender.com/api/v1/processaCobrancasEmFila
+    - curl -X POST -f https://externoapi.onrender.com/processaCobrancasEmFila
     - echo "Job concluído."
