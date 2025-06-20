@@ -6,11 +6,11 @@ from app.services.cartao_service import get_cartao_service, CartaoService
 router = APIRouter(tags=["Externo"])
 
 @router.post(
-    "/valida-cartao-de-credito",
+    "/validaCartaoDeCredito",
     summary="Valida os dados de um cartão de crédito",
-    status_code=status.HTTP_204_NO_CONTENT,
+    status_code=status.HTTP_200_OK,
     responses={
-        status.HTTP_204_NO_CONTENT: {
+        status.HTTP_200_OK: {
             "description": "Validação do cartão bem-sucedida. Nenhum conteúdo é retornado."
         },
         status.HTTP_422_UNPROCESSABLE_ENTITY: {
@@ -25,4 +25,4 @@ async def validar_cartao(
 ):
     await service.validar_cartao(dados)
 
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return Response(status_code=status.HTTP_200_OK)
