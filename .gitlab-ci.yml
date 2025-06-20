@@ -83,6 +83,6 @@ processar_fila_job:
   script:
     - echo "Iniciando job agendado (sem token) para processar fila..."
     - >
-      curl -X POST -f https://sua-api.onrender.com/api/v1/processaCobrancasEmFila
+      curl -X POST -f https://externoapi.onrender.com/processaCobrancasEmFila
     - echo "Job concluído."
 
