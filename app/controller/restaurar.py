@@ -1,23 +1,17 @@
-from fastapi import APIRouter, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, status, Response
+
+
+# A importação agora fica no topo do arquivo
+from app.db.seed import restaurar_dados_iniciais
 
 router = APIRouter()
 
-@router.get(
-    "/restaurarBanco",
+@router.post(
+    "/restaurar-banco",
     tags=["Externo"],
     status_code=status.HTTP_200_OK,
-    summary="Restaura o banco de dados para os dados iniciais." # Added summary
+    summary="Restaura o banco de dados para os dados iniciais."
 )
 def restaurar_banco():
-    try:
-        # Simulação de reset do banco de dados
-        from app.db.seed import restaurar_dados_iniciais
-        restaurar_dados_iniciais()
-
-        return {"mensagem": "Banco restaurado com sucesso."}
-    except Exception as e:
-        return JSONResponse(
-            status_code=422,
-            content={"erro": "FALHA_RESTAURACAO", "mensagem": str(e)}
-        )
+    restaurar_dados_iniciais()
+    return Response(status_code=status.HTTP_200_OK)

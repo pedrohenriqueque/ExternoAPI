@@ -1,93 +1,80 @@
+# Em app/services/cobranca_service.py (Versão Refatorada)
+
 from datetime import datetime, timezone
 import stripe
-from sqlalchemy.orm import Session
-from typing import Optional, List
+from typing import List
 
+from app.repositories.cobranca_repository import CobrancaRepository # NOVO
 from app.integrations.stripe import StripeGateway
 from app.models.cobranca import Cobranca
 from app.core.exceptions import CartaoApiError
 from app.schemas.nova_cobranca_schema import NovaCobrancaSchema
 
-
 class CobrancaService:
-    mapa_ciclista_para_cartao = {
-        0: "pm_card_visa",
-        1: "pm_card_visa_chargeDeclined",
-    }
-
-    def __init__(self, db: Session, payment_gateway: StripeGateway):
-        self.db = db
+    def __init__(self, cobranca_repo: CobrancaRepository, payment_gateway: StripeGateway):
+        # Agora depende de abstrações, não de detalhes (db.session)
+        self.cobranca_repo = cobranca_repo
         self.payment_gateway = payment_gateway
+        # MeioDePagamentoRepository seria injetado aqui também para buscar o cartão
 
-    def criar_cobranca(self, dados: NovaCobrancaSchema) -> Cobranca:
-        cobranca_schema = Cobranca(
-            ciclista=dados.ciclista,
-            valor=dados.valor,
-            status="PENDENTE",
-            horaSolicitacao=datetime.now(timezone.utc)
-        )
-        self.db.add(cobranca_schema)
-        self.db.commit()
-        self.db.refresh(cobranca_schema)
-        return cobranca_schema
-
-    def obter_por_id(self, id_cobranca: int) -> Optional[Cobranca]:
-        return self.db.query(Cobranca).filter(Cobranca.id == id_cobranca).first()
-
-    def incluir_na_fila(self, dados: NovaCobrancaSchema) -> Cobranca:
-        return self.criar_cobranca(dados)
-
-    def tentar_processar_pagamento(self, cobranca: Cobranca) -> str:
-        payment_method_id = self.mapa_ciclista_para_cartao.get(cobranca.ciclista)
+    def _obter_payment_method_id_do_ciclista(self, ciclista_id: int) -> str:
+        mapa_mock = {
+            0: "pm_card_visa",
+            1: "pm_card_visa_chargeDeclined",
+        }
+        payment_method_id = mapa_mock.get(ciclista_id)
         if not payment_method_id:
-            raise CartaoApiError(422, "CICLISTA_SEM_CARTAO", f"Não foi encontrado um cartão para o ciclista {cobranca.ciclista}.")
+            raise CartaoApiError(422,"CICLISTA_SEM_CARTAO", f"Não foi encontrado um cartão para o ciclista {ciclista_id}.")
+        return payment_method_id
+
+    def criar_cobranca_na_fila(self, dados: NovaCobrancaSchema) -> Cobranca:
+        hora_solicitacao = datetime.now(timezone.utc)
+        nova_cobranca = self.cobranca_repo.criar(dados, hora_solicitacao)
+        return self.cobranca_repo.salvar(nova_cobranca)
+
+    def obter_por_id(self, id_cobranca: int) -> Cobranca:
+        cobranca = self.cobranca_repo.obter_por_id(id_cobranca)
+        if not cobranca:
+            raise CartaoApiError(422,"COBRANCA_NAO_ENCONTRADA", f"Cobrança com ID {id_cobranca} não encontrada.")
+        return cobranca
+
+    def processar_pagamento_de_cobranca(self, id_cobranca: int) -> Cobranca:
+
+        cobranca = self.obter_por_id(id_cobranca)
 
         try:
+            payment_method_id = self._obter_payment_method_id_do_ciclista(cobranca.ciclista)
             intent = self.payment_gateway.processar_pagamento(
                 valor_em_centavos=int(cobranca.valor * 100),
                 payment_method_id=payment_method_id
             )
-            return intent.status
-        except stripe.error.CardError as e:
-            raise CartaoApiError(422, "CARTAO_RECUSADO", e.user_message)
-        except stripe.error.StripeError:
-            raise CartaoApiError(500, "ERRO_GATEWAY", "Erro de comunicação com o provedor de pagamento.")
-
-    def processar_cobranca(self, cobranca: Cobranca) -> Cobranca:
-        try:
-            status = self.tentar_processar_pagamento(cobranca)
-            cobranca.status = "PAGA" if status == "succeeded" else "FALHA"
-        except CartaoApiError as e:
+            cobranca.status = "PAGA" if intent.status == "succeeded" else "FALHA"
+        except stripe.error.StripeError as e:
             cobranca.status = "FALHA"
+            if isinstance(e, stripe.error.CardError):
+                raise CartaoApiError(422, "CARTAO_RECUSADO", e.user_message) from e
+            if isinstance(e, stripe.error.StripeError):
+                raise CartaoApiError(422, "ERRO_GATEWAY", "Erro de comunicação com o provedor.") from e
             raise e
         finally:
             cobranca.horaFinalizacao = datetime.now(timezone.utc)
-            self.db.commit()
-            self.db.refresh(cobranca)
+            # Apenas um commit ao final da operação de negócio
+            self.cobranca_repo.salvar(cobranca)
 
         return cobranca
 
-    def processar_cobranca_em_fila(self, cobranca: Cobranca) -> Optional[Cobranca]:
-        try:
-            status = self.tentar_processar_pagamento(cobranca)
-            if status == "succeeded":
-                cobranca.status = "PAGA"
-                cobranca.horaFinalizacao = datetime.now(timezone.utc)
-                self.db.commit()
-                self.db.refresh(cobranca)
-                return cobranca
-        except CartaoApiError:
-            # Ignora erro e mantém pendente
-            pass
-        return None
-
     def processar_cobrancas_em_fila(self) -> List[Cobranca]:
-        cobrancas_pendentes = self.db.query(Cobranca).filter_by(status="PENDENTE").all()
-        cobrancas_processadas = []
+
+        cobrancas_pendentes = self.cobranca_repo.listar_pendentes()
+        cobrancas_processadas_com_sucesso = []
 
         for cobranca in cobrancas_pendentes:
-            resultado = self.processar_cobranca_em_fila(cobranca)
-            if resultado:
-                cobrancas_processadas.append(resultado)
+            try:
+                # Reutiliza a lógica principal de processamento
+                resultado = self.processar_pagamento_de_cobranca(cobranca.id)
+                if resultado.status == "PAGA":
+                    cobrancas_processadas_com_sucesso.append(resultado)
+            except CartaoApiError:
+                pass
 
-        return cobrancas_processadas
+        return cobrancas_processadas_com_sucesso

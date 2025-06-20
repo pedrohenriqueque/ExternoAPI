@@ -73,7 +73,16 @@ post-deploy-check:
   script:
     - echo "Verificando o endpoint após deploy no Render..."
     - sleep 20  # dá tempo para o Render subir
-    - curl --fail https://externoapi.onrender.com/ || exit 1
+    - curl --fail https://externoapi.onrender.com/docs || exit 1
   only:
     - master
+
+processar_fila_job:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+  script:
+    - echo "Iniciando job agendado (sem token) para processar fila..."
+    - >
+      curl -X POST -f https://sua-api.onrender.com/api/v1/processaCobrancasEmFila
+    - echo "Job concluído."
 
