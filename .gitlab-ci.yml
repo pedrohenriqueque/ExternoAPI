@@ -4,10 +4,11 @@ stages:
   - sonarcloud
   - deploy
   - post-check
+  - scheduled-tasks  # <-- Adicionei um estágio novo para o job agendado
 
 variables:
   SONAR_USER_HOME: "${CI_PROJECT_DIR}/.sonar"
-  GIT_DEPTH: "0"  # Para o Sonar funcionar corretamente com histórico
+  GIT_DEPTH: "0"
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
 cache:
@@ -17,6 +18,10 @@ cache:
 
 build-job:
   stage: build
+  rules:
+    # Roda em pushes para master/develop e em merge requests
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop")'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   script:
     - echo "Compiling the code..."
     - echo "Compile complete."
@@ -24,11 +29,13 @@ build-job:
 test-job:
   stage: test
   image: python:3.10
+  rules: # <-- REGRA ADICIONADA
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop")'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   script:
     - pip install -r requirements.txt
     - pip install pytest pytest-cov
     - pytest --cov=app --cov-report=xml
-    # Ajusta paths no coverage.xml para o ambiente Linux do runner (relativo)
     - sed -i 's|C:/Users/Pedro/PycharmProjects/ExternoAPI/|app/|g' coverage.xml
   artifacts:
     paths:
@@ -43,6 +50,9 @@ sonarcloud-check:
     entrypoint: [""]
   dependencies:
     - test-job
+  rules: # <-- REGRA ATUALIZADA DE 'only' PARA 'rules'
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop")'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   script:
     - |
       sonar-scanner \
@@ -53,36 +63,32 @@ sonarcloud-check:
         -Dsonar.python.coverage.reportPaths=coverage.xml \
         -Dsonar.sourceEncoding=UTF-8 \
         -Dsonar.login=$SONAR_TOKEN
-  only:
-    - merge_requests
-    - master
-    - develop
-
 
 render-deploy:
   stage: deploy
   image: curlimages/curl:latest
+  rules: # <-- REGRA ATUALIZADA DE 'only' PARA 'rules'
+    # Esta regra é mais específica: Roda somente se o gatilho for um push E a branch for master
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
   script:
     - curl -X POST "https://api.render.com/deploy/srv-d10bv549c44c73dihid0?key=4TAdh2zqfgk"
-  only:
-    - master
 
 post-deploy-check:
   stage: post-check
   image: curlimages/curl
+  rules: # <-- REGRA ATUALIZADA DE 'only' PARA 'rules'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
   script:
     - echo "Verificando o endpoint após deploy no Render..."
-    - sleep 20  # dá tempo para o Render subir
+    - sleep 20
     - curl --fail https://externoapi.onrender.com/docs || exit 1
-  only:
-    - master
 
+# O seu job agendado continua com a regra correta, mas agora em seu próprio estágio
 processar_fila_job:
+  stage: scheduled-tasks
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"
   script:
-    - echo "Iniciando job agendado (sem token) para processar fila..."
-    - >
-      curl -X POST -f https://externoapi.onrender.com/processaCobrancasEmFila
+    - echo "Iniciando job agendado para processar fila..."
+    - curl -X POST -f https://externoapi.onrender.com/api/v1/processaCobrancasEmFila
     - echo "Job concluído."
-
