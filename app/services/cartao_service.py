@@ -15,8 +15,8 @@ class CartaoService:
     def __init__(self, stripe_gateway: StripeGateway):
         self.gateway = stripe_gateway
 
-    async def validar_cartao(self, dados_cartao: NovoCartaoDeCreditoSchema) -> None:
-        self.gateway.validar_cartao(dados_cartao.numero)
+    def validar_cartao(self, dados_cartao: NovoCartaoDeCreditoSchema) -> None:
+            self.gateway.validar_cartao(dados_cartao.numero)
 
 def get_cartao_service() -> CartaoService:
     gateway = StripeGateway()

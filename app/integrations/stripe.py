@@ -4,7 +4,8 @@ from app.core.exceptions import CartaoApiError  # para lançar erros personaliza
 
 class StripeGateway:
 
-    def processar_pagamento(self, valor_em_centavos: int, payment_method_id: str) -> Any:
+    @staticmethod
+    def processar_pagamento(valor_em_centavos: int, payment_method_id: str) -> Any:
         try:
             return stripe.PaymentIntent.create(
                 amount=valor_em_centavos,
@@ -18,7 +19,8 @@ class StripeGateway:
             print(f"Gateway Error: {e}")
             raise e
 
-    def validar_cartao(self, numero_cartao: str) -> None:
+    @staticmethod
+    def validar_cartao(numero_cartao: str) -> None:
         numero_limpo = numero_cartao.replace(" ", "")
         mapa_testes = {
             "4242424242424242": "pm_card_visa",

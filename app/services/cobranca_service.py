@@ -12,12 +12,11 @@ from app.schemas.nova_cobranca_schema import NovaCobrancaSchema
 
 class CobrancaService:
     def __init__(self, cobranca_repo: CobrancaRepository, payment_gateway: StripeGateway):
-        # Agora depende de abstrações, não de detalhes (db.session)
         self.cobranca_repo = cobranca_repo
         self.payment_gateway = payment_gateway
-        # MeioDePagamentoRepository seria injetado aqui também para buscar o cartão
 
-    def _obter_payment_method_id_do_ciclista(self, ciclista_id: int) -> str:
+    @staticmethod
+    def _obter_payment_method_id_do_ciclista(ciclista_id: int) -> str:
         mapa_mock = {
             0: "pm_card_visa",
             1: "pm_card_visa_chargeDeclined",
@@ -63,18 +62,31 @@ class CobrancaService:
 
         return cobranca
 
+    def tentar_cobranca_da_fila(self, cobranca: Cobranca) -> Cobranca | None:
+        try:
+            payment_method_id = self._obter_payment_method_id_do_ciclista(cobranca.ciclista)
+            intent = self.payment_gateway.processar_pagamento(
+                valor_em_centavos=int(cobranca.valor * 100),
+                payment_method_id=payment_method_id
+            )
+
+            if intent.status == "succeeded":
+                cobranca.status = "PAGA"
+                cobranca.horaFinalizacao = datetime.now(timezone.utc)
+                return self.cobranca_repo.salvar(cobranca)
+
+        except (CartaoApiError, stripe.error.StripeError) as e:
+            return None
+
+        return None
+
     def processar_cobrancas_em_fila(self) -> List[Cobranca]:
+        lista_cobrancas_pendentes = self.cobranca_repo.listar_pendentes()
+        lista_cobrancas_pagas = []
 
-        cobrancas_pendentes = self.cobranca_repo.listar_pendentes()
-        cobrancas_processadas_com_sucesso = []
+        for cobranca in lista_cobrancas_pendentes:
+            resultado = self.tentar_cobranca_da_fila(cobranca)
+            if resultado and resultado.status == "PAGA":
+                lista_cobrancas_pagas.append(resultado)
 
-        for cobranca in cobrancas_pendentes:
-            try:
-                # Reutiliza a lógica principal de processamento
-                resultado = self.processar_pagamento_de_cobranca(cobranca.id)
-                if resultado.status == "PAGA":
-                    cobrancas_processadas_com_sucesso.append(resultado)
-            except CartaoApiError:
-                pass
-
-        return cobrancas_processadas_com_sucesso
+        return lista_cobrancas_pagas

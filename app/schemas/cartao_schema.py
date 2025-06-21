@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel,ConfigDict, field_validator
 from datetime import datetime
 import re
 from app.core.exceptions import CartaoApiError

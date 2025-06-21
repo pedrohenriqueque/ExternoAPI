@@ -21,4 +21,4 @@ class EmailClient:
         response = self.sg.send(email)
 
         if not (200 <= response.status_code < 300):
-            raise CartaoApiError(422,"","")
+            raise CartaoApiError(422,"FALHA_ENVIO_EMAIL","Houve um erro no envio do email")

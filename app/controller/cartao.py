@@ -19,10 +19,10 @@ router = APIRouter(tags=["Externo"])
         }
     }
 )
-async def validar_cartao(
+def validar_cartao(
         dados: NovoCartaoDeCreditoSchema,
         service: CartaoService = Depends(get_cartao_service)
 ):
-    await service.validar_cartao(dados)
+    service.validar_cartao(dados)
 
     return Response(status_code=status.HTTP_200_OK)
