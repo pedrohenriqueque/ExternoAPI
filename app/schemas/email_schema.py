@@ -1,4 +1,6 @@
 from pydantic import BaseModel, field_validator
+from pydantic_core.core_schema import ValidationInfo
+
 from app.core.exceptions import CartaoApiError
 
 class EmailRequest(BaseModel):
@@ -7,9 +9,9 @@ class EmailRequest(BaseModel):
     mensagem: str
 
     @field_validator('assunto', 'mensagem')
-    def nao_pode_estar_vazio(cls, v, field):
+    def nao_pode_estar_vazio(cls, v, info: ValidationInfo):
         if not v or not v.strip():
-            raise CartaoApiError(422,"FORMATO_INCORRETO",f"O campo '{field.name}' não pode estar vazio.")
+            raise CartaoApiError(422,"FORMATO_INCORRETO",f"O campo '{info.field_name}' não pode estar vazio.")
         return v
 
     @field_validator('destinatario')

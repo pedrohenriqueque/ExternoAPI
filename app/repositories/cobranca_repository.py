@@ -17,7 +17,6 @@ class CobrancaRepository:
             horaSolicitacao=hora_solicitacao
         )
         self.db.add(cobranca_db)
-        # O commit será controlado pelo serviço
         return cobranca_db
 
     def obter_por_id(self, id_cobranca: int) -> Cobranca | None:
@@ -27,7 +26,6 @@ class CobrancaRepository:
         return self.db.query(Cobranca).filter_by(status="PENDENTE").all()
 
     def salvar(self, cobranca: Cobranca) -> Cobranca:
-        """Salva uma instância de Cobranca (add, commit, refresh)."""
         self.db.add(cobranca)
         self.db.commit()
         self.db.refresh(cobranca)
