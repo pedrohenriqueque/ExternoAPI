@@ -9,10 +9,16 @@ class EmailRequest(BaseModel):
     mensagem: str
 
     @field_validator('assunto', 'mensagem')
-    def nao_pode_estar_vazio(cls, v, info: ValidationInfo):
-        if not v or not v.strip():
+    def nao_pode_estar_vazio(cls, v: str, info: ValidationInfo):
+        # 1. Remove os espaços e guarda o resultado
+        valor_tratado = v.strip()
+
+        # 2. Verifica se o valor tratado está vazio
+        if not valor_tratado:
             raise CartaoApiError(422,"FORMATO_INCORRETO",f"O campo '{info.field_name}' não pode estar vazio.")
-        return v
+
+        # 3. Retorna o valor já tratado (sem espaços)
+        return valor_tratado
 
     @field_validator('destinatario')
     def validar_email(cls, v):
