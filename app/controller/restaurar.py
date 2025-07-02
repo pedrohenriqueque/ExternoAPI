@@ -6,7 +6,7 @@ from app.db.seed import restaurar_dados_iniciais
 
 router = APIRouter()
 
-@router.post(
+@router.get(
     "/restaurarBanco",
     tags=["Externo"],
     status_code=status.HTTP_200_OK,
