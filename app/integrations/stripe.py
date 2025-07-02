@@ -40,7 +40,7 @@ class StripeGateway:
         try:
             return_url = "https://seu-dominio.com/validacao-retorno"
 
-            setup_intent = stripe.SetupIntent.create(
+            stripe.SetupIntent.create(
                 payment_method=payment_method_id,
                 confirm=True,
                 usage="off_session",
