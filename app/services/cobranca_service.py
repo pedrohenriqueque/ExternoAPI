@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 import stripe
 from typing import List
 
-from app.repositories.cobranca_repository import CobrancaRepository # NOVO
+from app.clients.aluguel_client import AluguelMicroserviceClient
+from app.repositories.cobranca_repository import CobrancaRepository
 from app.integrations.stripe import StripeGateway
 from app.models.cobranca import Cobranca
 from app.core.exceptions import CartaoApiError
@@ -12,34 +13,26 @@ from app.services.email_service import EmailService
 
 
 class CobrancaService:
-    def __init__(self, cobranca_repo: CobrancaRepository, payment_gateway: StripeGateway, email_service: EmailService):
+    def __init__(self, cobranca_repo: CobrancaRepository, payment_gateway: StripeGateway, email_service: EmailService, aluguel_client: AluguelMicroserviceClient):
         self.cobranca_repo = cobranca_repo
         self.payment_gateway = payment_gateway
         self.email_service = email_service
+        self.aluguel_client = aluguel_client
 
-    @staticmethod
-    def _obter_payment_method_id_do_ciclista(ciclista_id: int) -> str:
-        mapa_mock = {
-            0: "pm_card_visa",
-            1: "pm_card_visa_chargeDeclined",
-        }
-        payment_method_id = mapa_mock.get(ciclista_id)
-        if not payment_method_id:
+
+    def _obter_payment_method_id_do_ciclista(self, ciclista_id: int) -> str:
+        cartao = self.aluguel_client.get_cartao_de_credito(ciclista_id)
+        if not cartao:
             raise CartaoApiError(422,"CICLISTA_SEM_CARTAO", f"Não foi encontrado um cartão para o ciclista {ciclista_id}.")
-        return payment_method_id
 
-    @staticmethod
-    def _obter_email_do_ciclista(ciclista_id: int) -> str | None:
+        # Simulação: Se a API retornou um cartão, consideramos válido para o Stripe
+        return "pm_card_visa"
 
-        mapa_emails_mock = {
-            0: "pedrohenriqueque@gmail.com"
-        }
-        email = mapa_emails_mock.get(ciclista_id)
-        if not email:
-            # É importante logar isso em um sistema real, não posso so lançar um erro 422, pois a cobrança foi feita e guardada, é apenas um problema de envio de email.
-            print(f"ALERTA: E-mail para o ciclista {ciclista_id} não encontrado. Notificação não será enviada.")
+    def _obter_email_do_ciclista(self, ciclista_id: int) -> str | None:
+        ciclista = self.aluguel_client.get_ciclista(ciclista_id)
+        if not ciclista or not ciclista.get("email"):
             return None
-        return email
+        return ciclista["email"]
 
     def criar_cobranca_na_fila(self, dados: NovaCobrancaSchema) -> Cobranca:
         hora_solicitacao = datetime.now(timezone.utc)

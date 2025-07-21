@@ -26,6 +26,7 @@ class StripeGateway:
         numero_limpo = numero_cartao.replace(" ", "")
         mapa_testes: Dict[str, str] = {
             "4242424242424242": "pm_card_visa",
+            "4012001037141112": "pm_card_visa",
             "4000000000000002": "pm_card_visa_chargeDeclined",
         }
         payment_method_id = mapa_testes.get(numero_limpo)

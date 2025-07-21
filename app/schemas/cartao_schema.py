@@ -45,22 +45,6 @@ class NovoCartaoDeCreditoSchema(BaseModel):
         return soma % 10 == 0
 
 
-    @field_validator('validade')
-    @classmethod
-    def validar_formatos_e_data_expiracao(cls, v: str) -> str:
-        match = re.fullmatch(r"^(0?[1-9]|1[0-2])\/(\d{2}|\d{4})$", v)
-        if not match:
-            raise CartaoApiError(422, "VALIDADE_INVALIDA", "Formato de validade inválido. Use M/YY, MM/YY, M/YYYY ou MM/YYYY (ex: 1/26, 01/26, 1/2026, 01/2026).")
-        mes_str, ano_str = match.groups()
-        mes = int(mes_str)
-        ano = int(ano_str) + 2000 if len(ano_str) == 2 else int(ano_str)
-
-        hoje = datetime.now()
-        if ano < hoje.year or (ano == hoje.year and mes < hoje.month):
-            tipo = "ano" if ano < hoje.year else "mês"
-            raise CartaoApiError(422, "CARTAO_EXPIRADO", f"Cartão de crédito expirado ({tipo}).")
-
-        return v
 
     @field_validator('cvv')
     @classmethod

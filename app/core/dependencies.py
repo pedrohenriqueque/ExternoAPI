@@ -3,6 +3,7 @@
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from app.clients.aluguel_client import AluguelMicroserviceClient
 from app.db.session import SessionLocal
 from app.integrations.stripe import StripeGateway
 from app.repositories.cobranca_repository import CobrancaRepository
@@ -17,6 +18,9 @@ def get_db() -> Session:
     finally:
         db.close()
 
+def get_aluguel_client() -> AluguelMicroserviceClient:
+    """Retorna uma instância de AluguelClient."""
+    return AluguelMicroserviceClient()
 
 def get_cobranca_repository(db: Session = Depends(get_db)) -> CobrancaRepository:
     return CobrancaRepository(db=db)
@@ -24,7 +28,8 @@ def get_cobranca_repository(db: Session = Depends(get_db)) -> CobrancaRepository
 def get_cobranca_service(
         repo: CobrancaRepository = Depends(get_cobranca_repository),
         gateway: StripeGateway = Depends(StripeGateway),
-        email_svc: EmailService = Depends(EmailService)
+        email_svc: EmailService = Depends(EmailService),
+        aluguel_client: AluguelMicroserviceClient = Depends(get_aluguel_client)
 ) -> CobrancaService:
 
     # Crie a instância do EmailService
@@ -34,5 +39,6 @@ def get_cobranca_service(
     return CobrancaService(
         cobranca_repo=repo,
         payment_gateway=gateway,
-        email_service=email_svc # Argumento em falta adicionado
+        email_service=email_svc, # Argumento em falta adicionado
+        aluguel_client=aluguel_client
     )
