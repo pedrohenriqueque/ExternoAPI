@@ -17,7 +17,7 @@ def restaurar_banco():
     return Response(status_code=status.HTTP_200_OK)
 
 @router.get(
-    "/restauraDados",
+    "/restaurarDados",
     tags=["Externo"],
     status_code=status.HTTP_200_OK,
     summary="Restaura o banco de dados para os dados iniciais."
